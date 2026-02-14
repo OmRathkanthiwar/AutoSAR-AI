@@ -33,6 +33,10 @@ export function evaluateCase(caseData: CaseData): RuleEngineOutput {
   const totalAmount = transactions.reduce((sum, txn) => sum + txn.amount, 0);
   metrics.total_transaction_value_inr = Math.round(totalAmount);
   metrics.transaction_count = transactions.length;
+  // Fixed: Calculate average transaction value
+  metrics.average_transaction_value = transactions.length > 0
+    ? Math.round(totalAmount / transactions.length)
+    : 0;
 
   // Rule 1: Critical Single Transaction (> ₹45 Lakhs)
   transactions.forEach((txn, idx) => {
@@ -68,12 +72,12 @@ export function evaluateCase(caseData: CaseData): RuleEngineOutput {
   }
 
   // Rule 4: High-Risk Jurisdictions
-  const highRiskTxns = transactions.filter(txn => HIGH_RISK_COUNTRIES.has(txn.country));
-  const mediumRiskTxns = transactions.filter(txn => MEDIUM_RISK_COUNTRIES.has(txn.country));
+  const highRiskTxns = transactions.filter(txn => HIGH_RISK_COUNTRIES.has(txn.counterparty_country));
+  const mediumRiskTxns = transactions.filter(txn => MEDIUM_RISK_COUNTRIES.has(txn.counterparty_country));
 
   if (highRiskTxns.length > 0) {
     riskScore += RISK_WEIGHTS.HIGH_RISK_JURISDICTION;
-    const countries = [...new Set(highRiskTxns.map(t => t.country))].join(', ');
+    const countries = [...new Set(highRiskTxns.map(t => t.counterparty_country))].join(', ');
     triggeredRules.push(`High-Risk Jurisdiction: ${highRiskTxns.length} transactions to ${countries}`);
     typologyTags.push(TYPOLOGIES.HAWALA);
   }
@@ -150,7 +154,7 @@ export function evaluateCase(caseData: CaseData): RuleEngineOutput {
     total_amount_inr: Math.round(totalAmount),
     total_amount_lakhs: (totalAmount / 100000).toFixed(2),
     transaction_count: transactions.length,
-    high_risk_countries: [...new Set(highRiskTxns.map(t => t.country))],
+    high_risk_countries: [...new Set(highRiskTxns.map(t => t.counterparty_country))],
     primary_concerns: triggeredRules.slice(0, 5),
     recommended_action: finalClassification,
   };
@@ -162,7 +166,7 @@ export function evaluateCase(caseData: CaseData): RuleEngineOutput {
     triggered_rules: triggeredRules,
     calculated_metrics: metrics,
     typology_tags: [...new Set(typologyTags)],
-    aggregated_risk_score: Math.min(riskScore, 100),
+    aggregated_risk_score: Math.min(riskScore, 99),
     suspicion_summary_json: suspicionSummary,
     final_classification: finalClassification,
   };

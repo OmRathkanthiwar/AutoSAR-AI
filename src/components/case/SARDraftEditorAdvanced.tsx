@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { 
+import {
   Loader2, Save, Send, RotateCcw, FileText,
-  AlertCircle, CheckCircle2, History 
+  AlertCircle, CheckCircle2, History
 } from 'lucide-react';
 import { logDraftEdit, logDraftSaved, logSubmittedForReview } from '@/core/audit/logger';
 import { CaseStatus, UserRole } from '@/lib/db/schema.types';
@@ -46,33 +46,22 @@ export function SARDraftEditorAdvanced({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Permission checks
-  const canEdit = userRole === UserRole.ANALYST && 
-    isAssignedAnalyst && 
+  const canEdit = userRole === UserRole.ANALYST &&
+    isAssignedAnalyst &&
     (caseStatus === CaseStatus.NEW ||
-     caseStatus === CaseStatus.UNDER_INVESTIGATION ||
-     caseStatus === CaseStatus.DRAFT_READY ||
-     caseStatus === CaseStatus.REJECTED);
+      caseStatus === CaseStatus.UNDER_INVESTIGATION ||
+      caseStatus === CaseStatus.DRAFT_READY ||
+      caseStatus === CaseStatus.REJECTED);
 
-  const canSubmit = canEdit && caseStatus !== CaseStatus.UNDER_REVIEW;
+  // Fixed: Removed redundant check that conflicts with TS narrowing
+  // The type of caseStatus is already narrowed by canEdit
+  const canSubmit = canEdit;
 
   useEffect(() => {
     setHasUnsavedChanges(draft !== initialDraft && !isSaving);
   }, [draft, initialDraft, isSaving]);
 
-  // Auto-save functionality (optional)
-  useEffect(() => {
-    if (!isEditing || !hasUnsavedChanges) return;
-
-    const autoSaveTimer = setTimeout(() => {
-      if (hasUnsavedChanges) {
-        handleSave(true); // Auto-save
-      }
-    }, 30000); // Auto-save after 30 seconds of inactivity
-
-    return () => clearTimeout(autoSaveTimer);
-  }, [draft, hasUnsavedChanges, isEditing]);
-
-  const handleSave = async (isAutoSave = false) => {
+  const handleSave = useCallback(async (isAutoSave = false) => {
     if (!canEdit) return;
 
     setIsSaving(true);
@@ -80,9 +69,9 @@ export function SARDraftEditorAdvanced({
 
     try {
       const newVersion = isAutoSave ? version : version + 0.1;
-      
+
       // Log the edit to audit trail
-      await logDraftEdit(caseId, userId, newVersion, 
+      await logDraftEdit(caseId, userId, newVersion,
         isAutoSave ? 'Auto-saved' : 'Manual save');
 
       // Call the save handler
@@ -115,7 +104,65 @@ export function SARDraftEditorAdvanced({
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [canEdit, caseId, userId, version, onSave, draft]);
+
+  // Auto-save functionality (optional)
+  useEffect(() => {
+    if (!isEditing || !hasUnsavedChanges) return;
+
+    const autoSaveTimer = setTimeout(() => {
+      if (hasUnsavedChanges) {
+        handleSave(true); // Auto-save
+      }
+    }, 30000); // Auto-save after 30 seconds of inactivity
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [draft, hasUnsavedChanges, isEditing, handleSave]);
+
+  // const handleSave = useCallback(async (isAutoSave = false) => {
+  //   if (!canEdit) return;
+
+  //   setIsSaving(true);
+  //   setSaveStatus('saving');
+
+  //   try {
+  //     const newVersion = isAutoSave ? version : version + 0.1;
+
+  //     // Log the edit to audit trail
+  //     await logDraftEdit(caseId, userId, newVersion,
+  //       isAutoSave ? 'Auto-saved' : 'Manual save');
+
+  //     // Call the save handler
+  //     if (onSave) {
+  //       await onSave(draft, newVersion);
+  //     }
+
+  //     // Simulate API call for demo
+  //     await new Promise(resolve => setTimeout(resolve, 1000));
+
+  //     setVersion(newVersion);
+  //     setLastSaved(new Date());
+  //     setSaveStatus('saved');
+  //     setHasUnsavedChanges(false);
+
+  //     if (!isAutoSave) {
+  //       setIsEditing(false);
+  //     }
+
+  //     // Log successful save
+  //     await logDraftSaved(caseId, userId, newVersion, Math.floor(Math.random() * 1000));
+
+  //     // Reset status after 3 seconds
+  //     setTimeout(() => setSaveStatus('idle'), 3000);
+
+  //   } catch (error) {
+  //     console.error('Save error:', error);
+  //     setSaveStatus('error');
+  //     setTimeout(() => setSaveStatus('idle'), 5000);
+  //   } finally {
+  //     setIsSaving(false);
+  //   }
+  // }, [canEdit, caseId, userId, version, onSave, draft]);
 
   const handleRegenerate = async () => {
     if (!canEdit) return;
@@ -134,9 +181,9 @@ export function SARDraftEditorAdvanced({
         const response = await fetch('/api/sar-generation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             caseId,
-            regenerate: true 
+            regenerate: true
           })
         });
 
@@ -186,7 +233,7 @@ export function SARDraftEditorAdvanced({
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       alert('SAR submitted for review successfully!');
-      
+
     } catch (error) {
       console.error('Submission error:', error);
       alert('Failed to submit SAR. Please try again.');
@@ -234,7 +281,7 @@ export function SARDraftEditorAdvanced({
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             {saveStatus === 'saving' && (
               <span className="text-sm text-gray-600 flex items-center">
@@ -248,11 +295,11 @@ export function SARDraftEditorAdvanced({
                 Saved
               </span>
             )}
-            
+
             {canEdit && !isEditing && (
               <>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={handleRegenerate}
                   disabled={isRegenerating}
@@ -269,8 +316,8 @@ export function SARDraftEditorAdvanced({
                     </>
                   )}
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setIsEditing(true)}
                 >
@@ -280,8 +327,8 @@ export function SARDraftEditorAdvanced({
             )}
 
             {canEdit && isEditing && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={handleDiscard}
                 disabled={isSaving}
@@ -312,7 +359,7 @@ export function SARDraftEditorAdvanced({
           </div>
         ) : (
           <div className="prose max-w-none">
-            <div 
+            <div
               className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-mono bg-gray-50 p-6 rounded border border-gray-200"
               role="article"
               aria-label="SAR narrative content"
@@ -340,14 +387,14 @@ export function SARDraftEditorAdvanced({
           <div className="flex items-center space-x-3">
             {isEditing ? (
               <>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={handleDiscard}
                   disabled={isSaving}
                 >
                   Discard Changes
                 </Button>
-                <Button 
+                <Button
                   onClick={() => handleSave(false)}
                   disabled={isSaving || !hasUnsavedChanges}
                   className="bg-blue-700 hover:bg-blue-800"
@@ -367,7 +414,7 @@ export function SARDraftEditorAdvanced({
               </>
             ) : (
               canSubmit && (
-                <Button 
+                <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting || hasUnsavedChanges}
                   className="bg-green-700 hover:bg-green-800"

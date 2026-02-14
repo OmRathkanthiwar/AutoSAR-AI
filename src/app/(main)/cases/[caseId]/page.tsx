@@ -74,28 +74,20 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
     try {
       const newVersion = (caseData.draft?.version_number || 1) + 0.1;
 
-      // Insert new draft version
-      const { error: draftError } = await supabase
-        .from('sar_drafts')
-        .insert({
-          case_id: caseId,
-          version_number: newVersion,
+      const response = await fetch(`/api/cases/${caseId}/draft`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           narrative_text: draft,
-          source_event: 'MANUAL_EDIT',
-          is_final_submission: false,
-          created_by_user_id: 'analyst',
-        });
-
-      if (draftError) throw draftError;
-
-      // Insert audit log
-      await supabase.from('audit_trail_logs').insert({
-        case_id: caseId,
-        event_type: 'DRAFT_SAVED',
-        description: `Draft saved (Version ${newVersion.toFixed(1)})`,
-        user_id: 'analyst',
-        detail_payload: { version_number: newVersion },
+          version_number: newVersion,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to save draft');
+      }
 
       setOriginalDraft(draft);
       setIsEditing(false);
@@ -117,37 +109,20 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
 
     setIsCompleting(true);
     try {
-      // Update case status
-      const { error: statusError } = await supabase
-        .from('cases')
-        .update({
-          status: 'COMPLETED',
-          last_updated_at: new Date().toISOString(),
-        })
-        .eq('case_id', caseId);
-
-      if (statusError) throw statusError;
-
-      // Mark draft as final
-      const { error: draftError } = await supabase
-        .from('sar_drafts')
-        .update({ is_final_submission: true })
-        .eq('case_id', caseId)
-        .eq('version_number', caseData.draft.version_number);
-
-      if (draftError) throw draftError;
-
-      // Insert audit log
-      await supabase.from('audit_trail_logs').insert({
-        case_id: caseId,
-        event_type: 'STATUS_CHANGE',
-        description: 'Case marked as COMPLETED',
-        user_id: 'analyst',
-        detail_payload: {
-          old_status: caseData.case.status,
-          new_status: 'COMPLETED'
+      const response = await fetch(`/api/cases/${caseId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          status: 'COMPLETED',
+          action: 'complete_case'
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to complete case');
+      }
 
       alert('✅ Case marked as COMPLETED successfully!');
       router.push('/dashboard');

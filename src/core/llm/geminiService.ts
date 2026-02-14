@@ -58,9 +58,9 @@ export async function generateSARNarrative(
   transactions: any[],
   ruleEngineOutput: RuleEngineOutput
 ): Promise<{ narrative: string; llm_log?: any }> {
-  
+
   const apiKey = process.env.GEMINI_API_KEY;
-  
+
   // If no API key, return template-based narrative
   if (!apiKey) {
     console.warn('GEMINI_API_KEY not set. Using template-based generation.');
@@ -103,8 +103,8 @@ export async function generateSARNarrative(
 }
 
 function buildCustomerInfo(customer: any): string {
-  return `Name: ${customer.full_name}
-Customer ID: ${customer.customer_id}
+  return `Name: ${customer.name || customer.full_name}
+Customer ID: ${customer.id || customer.customer_id}
 PAN: ${customer.pan || 'Not Available'}
 Occupation: ${customer.occupation || 'Unknown'}
 Annual Income: ₹${((customer.annual_income || 1200000) / 100000).toFixed(2)} Lakhs
@@ -114,16 +114,16 @@ Address: ${customer.address || 'Not Available'}`;
 function buildTransactionSummary(transactions: any[], ruleOutput: RuleEngineOutput): string {
   const total = ruleOutput.calculated_metrics.total_transaction_value_inr || 0;
   const count = ruleOutput.calculated_metrics.transaction_count || transactions.length;
-  
+
   return `Total Transactions: ${count}
 Total Value: ₹${(total / 100000).toFixed(2)} Lakhs (₹${total.toLocaleString()})
 Risk Score: ${ruleOutput.aggregated_risk_score}/100
 Classification: ${ruleOutput.final_classification}
 
 Transactions:
-${transactions.map((txn, idx) => 
-  `${idx + 1}. ${txn.date} - ₹${parseFloat(txn.amount).toLocaleString()} to ${txn.counterparty} (${txn.country}) via ${txn.type}`
-).join('\n')}`;
+${transactions.map((txn, idx) =>
+    `${idx + 1}. ${txn.date} - ₹${parseFloat(txn.amount).toLocaleString()} to ${txn.counterparty} (${txn.counterparty_country || txn.country || 'Unknown'}) via ${txn.type}`
+  ).join('\n')}`;
 }
 
 function buildRiskAnalysis(ruleOutput: RuleEngineOutput): string {
@@ -135,8 +135,8 @@ ${ruleOutput.typology_tags.join(', ')}
 
 Key Metrics:
 ${Object.entries(ruleOutput.calculated_metrics)
-  .map(([key, value]) => `- ${key}: ${value}`)
-  .join('\n')}`;
+      .map(([key, value]) => `- ${key}: ${value}`)
+      .join('\n')}`;
 }
 
 function generateFallbackSAR(
@@ -146,7 +146,7 @@ function generateFallbackSAR(
 ): string {
   const total = ruleOutput.calculated_metrics.total_transaction_value_inr || 0;
   const totalLakhs = (total / 100000).toFixed(2);
-  
+
   return `SUSPICIOUS ACTIVITY REPORT (SAR)
 Financial Intelligence Unit - India (FIU-IND)
 
@@ -176,9 +176,9 @@ ${ruleOutput.triggered_rules.map((rule: string, idx: number) => `${idx + 1}. ${r
 HOW: Transaction analysis reveals the following pattern:
 
 TRANSACTION DETAILS:
-${transactions.map((txn: any, idx: number) => 
-  `${idx + 1}. ${txn.date} - ₹${parseFloat(txn.amount).toLocaleString()} to ${txn.counterparty} (${txn.country}) via ${txn.type}`
-).join('\n')}
+${transactions.map((txn: any, idx: number) =>
+    `${idx + 1}. ${txn.date} - ₹${parseFloat(txn.amount).toLocaleString()} to ${txn.counterparty} (${txn.country}) via ${txn.type}`
+  ).join('\n')}
 
 RISK ANALYSIS:
 Typologies: ${ruleOutput.typology_tags.join(', ')}

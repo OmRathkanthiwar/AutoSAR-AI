@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/cases - List cases from Supabase
 export async function GET(request: NextRequest) {
   try {

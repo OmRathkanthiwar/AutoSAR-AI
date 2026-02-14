@@ -136,16 +136,41 @@ export async function PATCH(
 
     console.log(`Updating case ${caseId}:`, { status, action });
 
-    // In production: Update Supabase
-    // Add audit log entry
+    // Use service role to bypass RLS
+    const supabase = getServiceSupabase();
+
+    if (status === 'COMPLETED' && action === 'complete_case') {
+      // 1. Update Case Status
+      const { error: statusError } = await supabase
+        .from('cases')
+        .update({
+          status: 'COMPLETED',
+          last_updated_at: new Date().toISOString()
+        })
+        .eq('case_id', caseId);
+
+      if (statusError) throw statusError;
+
+      // 2. Mark latest draft as final (optional, best effort)
+      await supabase
+        .from('sar_drafts')
+        .update({ is_final_submission: true })
+        .eq('case_id', caseId)
+        .order('version_number', { ascending: false })
+        .limit(1);
+
+      // 3. Log Audit Trail
+      await supabase.from('audit_trail_logs').insert({
+        case_id: caseId,
+        event_type: 'STATUS_CHANGE',
+        description: 'Case marked as COMPLETED',
+        user_id: 'analyst', // In real app, get from session
+        detail_payload: { new_status: 'COMPLETED' }
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      data: {
-        case_id: caseId,
-        status: status || 'Pending Review',
-        updated_at: new Date().toISOString()
-      },
       message: 'Case updated successfully'
     });
 

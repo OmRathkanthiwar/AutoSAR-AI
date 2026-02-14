@@ -5,7 +5,7 @@ export interface Transaction {
     currency: string;
     date: string;
     counterparty: string;
-    country: string;
+    counterparty_country: string;
     type: string;
     description?: string;
 }

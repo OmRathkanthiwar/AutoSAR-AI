@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { evaluateCase } from '@/core/rules/engine';
 import { CaseService } from '@/core/services/caseService';
 import { CaseData, CustomerProfile, Transaction, RuleEngineOutput } from '@/core/types';
+import { generateSARNarrative } from '@/core/llm/geminiService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,12 +45,12 @@ export async function POST(request: NextRequest) {
       };
 
       const transactions: Transaction[] = customerData.transactions.map((txn: any) => ({
-        id: txn.transaction_id,
+        transaction_id: txn.transaction_id, // Fixed: Map to transaction_id for consistency
         amount: parseFloat(txn.amount),
         currency: txn.currency || 'INR',
         date: txn.date,
         counterparty: txn.counterparty,
-        country: txn.counterparty_country || 'IN',
+        counterparty_country: txn.counterparty_country || 'IN',
         type: txn.type,
         description: txn.description || ''
       }));
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         await CaseService.createCase(caseData, ruleOutput);
 
         // 5. Generate & Save Draft
-        const narrative = generateSimpleNarrative(caseData, ruleOutput);
+        const { narrative } = await generateSARNarrative(caseData.customer, caseData.transactions, ruleOutput);
         await CaseService.saveSARDraft(caseId, narrative);
 
         processedCases.push(caseId);
@@ -97,30 +97,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Simple template-based narrative generator
-function generateSimpleNarrative(caseData: CaseData, ruleOutput: RuleEngineOutput): string {
-  const { customer, transactions } = caseData;
-  const { aggregated_risk_score, triggered_rules, calculated_metrics } = ruleOutput;
 
-  const totalAmount = calculated_metrics.total_transaction_value_inr || 0;
-
-  return `SUSPICIOUS ACTIVITY REPORT
-Generated: ${new Date().toISOString()}
-
-SUBJECT: ${customer.name} (${customer.id})
-Score: ${aggregated_risk_score}/100
-Classification: ${ruleOutput.final_classification}
-
-SUMMARY:
-Subject performed ${transactions.length} transactions totaling INR ${totalAmount.toLocaleString()}.
-The following risk indicators were triggered:
-${triggered_rules.map((r: string) => `- ${r}`).join('\n')}
-
-DETAILS:
-Occupation: ${customer.occupation}
-Reported Income: ${customer.annual_income}
-
-TRANSACTION LOG:
-${transactions.map(t => `${t.date}: ${t.description} - ${t.amount} ${t.currency} -> ${t.counterparty}`).join('\n')}
-`;
-}
