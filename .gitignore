@@ -3,12 +3,13 @@ node_modules/
 .pnp
 .pnp.js
 
+# Local training datasets (the API ships its runtime model under server/src)
+/ml_model/
+
 # Testing
 coverage/
 
-# Next.js
-.next/
-out/
+# Client builds
 build/
 dist/
 
@@ -30,7 +31,6 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
-next-env.d.ts
 
 # IDE
 .vscode/

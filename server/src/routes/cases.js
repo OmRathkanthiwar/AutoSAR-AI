@@ -1,0 +1,374 @@
+import { Router } from 'express';
+import { randomUUID } from 'crypto';
+import { query, execute } from '../db/connection.js';
+import { evaluateCase } from '../core/rules/engine.js';
+import { generateSARNarrative } from '../core/llm/geminiService.js';
+import { CaseService } from '../core/services/caseService.js';
+import { logAuditEvent } from '../core/audit/logger.js';
+
+const router = Router();
+
+// =====================================================
+// GET /api/cases  – list all cases
+// =====================================================
+router.get('/', async (_req, res) => {
+  try {
+    const rows = await query(
+      `SELECT c.case_id, c.customer_name, c.status, c.created_at, c.last_updated_at,
+              r.aggregated_risk_score,
+              JSON_VALUE(n.customer_profile, '$.id')          AS customer_id,
+              JSON_VALUE(n.customer_profile, '$.customer_id') AS customer_id_alt
+       FROM cases c
+       LEFT JOIN rule_engine_outputs r ON c.case_id = r.case_id
+       LEFT JOIN case_data_normalized n ON c.case_id = n.case_id
+       ORDER BY c.created_at DESC`
+    );
+
+    const data = rows.map(row => ({
+      case_id: row.case_id,
+      customer_name: row.customer_name || 'Unknown',
+      customer_id: row.customer_id || row.customer_id_alt || '',
+      status: row.status,
+      risk_score: parseFloat(row.aggregated_risk_score) || 0,
+      created_at: row.created_at,
+    }));
+
+    res.json({ success: true, data, count: data.length });
+  } catch (error) {
+    console.error('[GET /cases]', error);
+    res.status(500).json({ error: 'Failed to fetch cases', details: error.message });
+  }
+});
+
+// =====================================================
+// POST /api/cases  – create a single case manually
+// =====================================================
+router.post('/', async (req, res) => {
+  try {
+    const {
+      customer_name,
+      customer_id,
+      alert_date,
+      alert_metadata = {},
+      customer_profile = {},
+      transaction_summary = {},
+      transaction_list = [],
+      case_context = {},
+      risk_indicators = [],
+    } = req.body;
+
+    if (!customer_name) {
+      return res.status(400).json({ error: 'Missing required field: customer_name' });
+    }
+
+    const caseId = `SAR-${new Date().getFullYear()}-${randomUUID().slice(0, 12).toUpperCase()}`;
+    const customer = {
+      id: customer_id,
+      customer_id,
+      name: customer_name,
+      full_name: customer_name,
+      ...customer_profile,
+    };
+    const transactions = transaction_list.map((transaction, index) => ({
+      transaction_id: transaction.transaction_id || `TXN-${index + 1}`,
+      amount: Number(transaction.amount),
+      currency: transaction.currency || 'INR',
+      date: transaction.date,
+      counterparty: transaction.counterparty || 'Unknown',
+      counterparty_country: transaction.counterparty_country || transaction.country || 'IN',
+      type: transaction.type || 'OTHER',
+      description: transaction.description || '',
+    }));
+
+    if (transactions.length === 0 || transactions.some(transaction => !Number.isFinite(transaction.amount) || transaction.amount <= 0 || !transaction.date)) {
+      return res.status(400).json({ error: 'At least one valid transaction with a positive amount and date is required' });
+    }
+
+    const caseData = { case_id: caseId, customer, transactions, alert_date, alert_metadata, case_context, transaction_summary };
+    const ruleOutput = evaluateCase(caseData);
+    await CaseService.createCase(caseData, ruleOutput, risk_indicators);
+    const { narrative } = await generateSARNarrative(customer, transactions, ruleOutput);
+    await CaseService.saveSARDraft(caseId, narrative);
+
+    await logAuditEvent(caseId, 'INGESTION_COMPLETE', 'Case created manually via UI', { source: 'UI-Manual' }, 'analyst');
+    await logAuditEvent(caseId, 'RULE_DECISION', `Risk evaluated: ${ruleOutput.final_classification}`, {
+      score: ruleOutput.aggregated_risk_score,
+      rules: ruleOutput.triggered_rules.slice(0, 3),
+    }, 'system');
+
+    res.status(201).json({ success: true, data: { case_id: caseId }, message: 'Case created successfully' });
+  } catch (error) {
+    console.error('[POST /cases]', error);
+    res.status(500).json({ error: 'Failed to create case', details: error.message });
+  }
+});
+
+// =====================================================
+// POST /api/cases/upload  – bulk JSON upload
+// =====================================================
+router.post('/upload', async (req, res) => {
+  try {
+    const { customers } = req.body;
+    if (!customers || !Array.isArray(customers)) {
+      return res.status(400).json({ error: 'Invalid format: "customers" array required' });
+    }
+
+    const processedCases = [];
+    let sarsGenerated = 0;
+    let firstCaseId = null;
+
+    for (const customerData of customers) {
+      if (!customerData.customer_id || !customerData.transactions || !Array.isArray(customerData.transactions)) {
+        console.warn(`[Upload] Skipping invalid customer: ${customerData.customer_id || 'unknown'}`);
+        continue;
+      }
+
+      const caseId = `SAR-${new Date().getFullYear()}-${randomUUID().slice(0, 12).toUpperCase()}`;
+
+      const customer = {
+        id: customerData.customer_id,
+        customer_id: customerData.customer_id,
+        name: customerData.full_name,
+        full_name: customerData.full_name,
+        occupation: customerData.occupation || 'Unknown',
+        annual_income: customerData.annual_income || 1200000,
+        expected_monthly_volume: customerData.expected_monthly_volume || 100000,
+        date_of_birth: customerData.date_of_birth,
+        pan: customerData.pan,
+        address: customerData.address,
+      };
+
+      const transactions = customerData.transactions.map(txn => ({
+        transaction_id: txn.transaction_id,
+        amount: parseFloat(txn.amount),
+        currency: txn.currency || 'INR',
+        date: txn.date,
+        counterparty: txn.counterparty,
+        counterparty_country: txn.counterparty_country || txn.country || 'IN',
+        type: txn.type,
+        description: txn.description || '',
+      }));
+
+      const caseData = { case_id: caseId, customer, transactions, alert_date: new Date().toISOString() };
+      const ruleOutput = evaluateCase(caseData);
+
+      if (ruleOutput.aggregated_risk_score >= 50) {
+        await CaseService.createCase(caseData, ruleOutput);
+        const { narrative } = await generateSARNarrative(customer, transactions, ruleOutput);
+        await CaseService.saveSARDraft(caseId, narrative);
+
+        await logAuditEvent(caseId, 'INGESTION_COMPLETE', `Batch uploaded: ${customerData.full_name}`, {
+          source: 'batch_upload',
+          risk_score: ruleOutput.aggregated_risk_score,
+        });
+        await logAuditEvent(caseId, 'RULE_DECISION', `Risk evaluated: ${ruleOutput.final_classification}`, {
+          score: ruleOutput.aggregated_risk_score,
+          rules: ruleOutput.triggered_rules.slice(0, 3),
+        });
+        await logAuditEvent(caseId, 'LLM_CALL', 'SAR narrative generated by Gemini AI', {
+          model: process.env.GEMINI_MODEL || 'gemini-2.0-flash-exp',
+        });
+
+        processedCases.push(caseId);
+        if (!firstCaseId) firstCaseId = caseId;
+        sarsGenerated++;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        processed: customers.length,
+        sars_generated: sarsGenerated,
+        case_ids: processedCases,
+        first_case_id: firstCaseId,
+      },
+      message: `Processed ${customers.length} customers. Generated ${sarsGenerated} SARs.`,
+    });
+  } catch (error) {
+    console.error('[POST /cases/upload]', error);
+    res.status(500).json({ error: 'Failed to process upload', details: error.message });
+  }
+});
+
+// =====================================================
+// GET /api/cases/:caseId  – get full case details
+// =====================================================
+router.get('/:caseId', async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const result = await CaseService.getCase(caseId);
+
+    if (!result || !result.caseRow) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    const { caseRow, normalizedRow, ruleOutput, sarDraft, auditLogs } = result;
+
+    // Parse JSON columns from MySQL
+    const parseJson = (val, fallback) => {
+      if (!val) return fallback;
+      if (typeof val === 'object') return val;
+      try { return JSON.parse(val); } catch { return fallback; }
+    };
+
+    const customerProfile = parseJson(normalizedRow?.customer_profile, {});
+    const transactionList = parseJson(normalizedRow?.transaction_list, []);
+    const riskIndicators = parseJson(normalizedRow?.risk_indicators, []);
+    const transactionSummary = parseJson(normalizedRow?.transaction_summary, null);
+    const triggeredRules = parseJson(ruleOutput?.triggered_rules, []);
+
+    const parsedRuleOutput = ruleOutput
+      ? {
+          ...ruleOutput,
+          triggered_rules: triggeredRules,
+          calculated_metrics: parseJson(ruleOutput.calculated_metrics, {}),
+          typology_tags: parseJson(ruleOutput.typology_tags, []),
+          suspicion_summary_json: parseJson(ruleOutput.suspicion_summary_json, {}),
+          aggregated_risk_score: parseFloat(ruleOutput.aggregated_risk_score) || 0,
+        }
+      : { aggregated_risk_score: 0 };
+
+    const parsedAuditLogs = auditLogs.map(log => ({
+      ...log,
+      detail_payload: parseJson(log.detail_payload, {}),
+    }));
+
+    const caseResponse = {
+      case: caseRow,
+      data: {
+        customer_profile: {
+          full_name: customerProfile.full_name || customerProfile.name || caseRow.customer_name || 'Unknown',
+          customer_id: customerProfile.customer_id || customerProfile.id || 'Unknown',
+          risk_rating: customerProfile.risk_rating || 'Medium',
+          occupation: customerProfile.occupation || 'Unknown',
+          expected_monthly_volume: customerProfile.expected_monthly_volume,
+          ...customerProfile,
+        },
+        transaction_list: transactionList,
+        risk_indicators:
+          riskIndicators.length > 0
+            ? riskIndicators
+            : triggeredRules.map(rule => ({
+                indicator_type: rule.includes('ML Model') ? 'AI Predictive Anomaly' : 'Rule Violation',
+                severity: rule.includes('Critical') || rule.includes('ML Model')
+                  ? 'CRITICAL'
+                  : rule.includes('High') ? 'HIGH' : 'MEDIUM',
+                description: rule,
+                rule_triggered: rule,
+              })),
+        transaction_summary: transactionSummary,
+        alert_metadata: parseJson(normalizedRow?.alert_metadata, {}),
+      },
+      ruleOutput: parsedRuleOutput,
+      draft: sarDraft || null,
+      auditLogs: parsedAuditLogs,
+    };
+
+    res.json({ success: true, data: caseResponse });
+  } catch (error) {
+    console.error('[GET /cases/:caseId]', error);
+    res.status(500).json({ error: 'Failed to load case', details: error.message });
+  }
+});
+
+// =====================================================
+// PATCH /api/cases/:caseId  – update case status
+// =====================================================
+router.patch('/:caseId', async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const { status, action } = req.body;
+
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    const update = await execute(
+      `UPDATE cases SET status = ?, last_updated_at = ? WHERE case_id = ?`,
+      [status, now, caseId]
+    );
+
+    if (update.affectedRows === 0) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    if (status === 'COMPLETED' && action === 'complete_case') {
+      // Mark latest draft as final
+      try {
+        await execute(
+          `UPDATE sar_drafts SET is_final_submission = TRUE
+           WHERE case_id = ? AND version_number = (SELECT MAX(version_number) FROM sar_drafts AS sd WHERE sd.case_id = ?)`,
+          [caseId, caseId]
+        );
+      } catch { /* non-blocking */ }
+    }
+
+    await logAuditEvent(caseId, 'STATUS_CHANGE', `Case status updated to ${status}`, { new_status: status }, 'analyst');
+
+    res.json({ success: true, message: 'Case updated successfully' });
+  } catch (error) {
+    console.error('[PATCH /cases/:caseId]', error);
+    res.status(500).json({ error: 'Failed to update case', details: error.message });
+  }
+});
+
+// =====================================================
+// DELETE /api/cases/:caseId
+// =====================================================
+router.delete('/:caseId', async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    await execute(`DELETE FROM cases WHERE case_id = ?`, [caseId]);
+    res.json({ success: true, message: 'Case deleted successfully' });
+  } catch (error) {
+    console.error('[DELETE /cases/:caseId]', error);
+    res.status(500).json({ error: 'Failed to delete case', details: error.message });
+  }
+});
+
+// =====================================================
+// POST /api/cases/:caseId/draft  – save a new draft version
+// =====================================================
+router.post('/:caseId/draft', async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const { narrative_text, version_number } = req.body;
+
+    if (!narrative_text) {
+      return res.status(400).json({ error: 'narrative_text is required' });
+    }
+
+    const draftId = await CaseService.saveSARDraft(caseId, narrative_text, version_number, 'MANUAL_EDIT');
+
+    await logAuditEvent(
+      caseId,
+      'DRAFT_EDIT',
+      `Draft saved (Version ${parseFloat(version_number).toFixed(1)})`,
+      { version_number, draft_id: draftId },
+      'analyst'
+    );
+
+    res.json({ success: true, data: { draft_id: draftId } });
+  } catch (error) {
+    console.error('[POST /cases/:caseId/draft]', error);
+    res.status(500).json({ error: 'Failed to save draft', details: error.message });
+  }
+});
+
+// =====================================================
+// GET /api/cases/:caseId/export  – export case data
+// =====================================================
+router.get('/:caseId/export', async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const result = await CaseService.getCase(caseId);
+    if (!result || !result.caseRow) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('[GET /cases/:caseId/export]', error);
+    res.status(500).json({ error: 'Failed to export case', details: error.message });
+  }
+});
+
+export default router;

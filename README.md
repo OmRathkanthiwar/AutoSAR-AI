@@ -1,129 +1,39 @@
-# AutoSAR AI - Complete Setup Guide
+# AutoSAR AI
 
-## Project Status
-This is a production-ready SAR (Suspicious Activity Report) narrative generator with comprehensive audit trail capabilities.
+AutoSAR AI is a React single-page application backed by an Express REST API and a local MySQL database. The runnable application is in `client/` and `server/`.
 
 ## Prerequisites
-- Node.js 18+ 
-- npm 9+
-- Supabase Account
-- Gemini API Key
 
-## Quick Start
+- Node.js 18 or later
+- MySQL 8 or later, with a local account allowed to create the configured database
 
-### 1. Install Dependencies
-```bash
-npm install
-```
+## Setup
 
-### 2. Setup Environment Variables
-Copy `.env.example` to `.env.local` and fill in your credentials:
+1. Configure `server/.env` from `server/.env.example`. Set `DB_USER`, `DB_PASSWORD`, and `DB_NAME` for your local MySQL installation. `GEMINI_API_KEY` is optional: the application has a local template-based SAR generator when it is blank.
+2. Install dependencies:
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   ```powershell
+   npm install --prefix client
+   npm install --prefix server
+   ```
 
-# Gemini API
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-2.0-flash-exp
-```
+3. Create the database tables:
 
-### 3. Setup Database
-Run the database schema in your Supabase project:
-```bash
-# Execute database/schema.sql in your Supabase SQL editor
-```
+   ```powershell
+   npm run db:init
+   ```
 
-### 4. Run Development Server
-```bash
-npm run dev
-```
+4. In separate terminals, run the API and React client:
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+   ```powershell
+   npm run dev:server
+   npm run dev:client
+   ```
 
-## Project Structure
+Open `http://localhost:5173`. The API runs at `http://localhost:5000`; Vite proxies `/api` requests to it.
 
-```
-autosar-ai/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── (main)/            # Main application routes
-│   │   │   ├── dashboard/     # Dashboard view
-│   │   │   └── cases/         # Case management
-│   │   └── api/               # API routes
-│   ├── components/            # React components
-│   │   ├── ui/               # shadcn/ui components
-│   │   ├── case/             # Case-specific components
-│   │   └── layout/           # Layout components
-│   ├── core/                 # Business logic
-│   │   ├── audit/            # Audit logging
-│   │   ├── ingestion/        # Data normalization
-│   │   ├── llm/              # Gemini API integration
-│   │   ├── rules/            # Rule engine
-│   │   └── governance/       # RBAC & permissions
-│   └── lib/                  # Utilities & helpers
-├── database/                  # Database schemas
-└── public/                   # Static assets
-```
+## Application flow
 
-## Features
-
-### Core Capabilities
-- ✅ Automated SAR narrative generation using Gemini AI
-- ✅ Deterministic rule-based risk scoring
-- ✅ Comprehensive immutable audit trail
-- ✅ Role-based access control (Analyst/Reviewer/Admin)
-- ✅ Data ingestion from multiple sources
-- ✅ Version control for SAR drafts
-- ✅ Regulatory compliance (FinCEN standards)
-
-### User Roles
-1. **Analyst (L1)**: Generate and edit SAR drafts
-2. **Reviewer (L2)**: Review and approve/reject SARs
-3. **Administrator (L3)**: System configuration and oversight
-
-## Development Commands
-
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run type-check   # Run TypeScript type checking
-npm run format       # Format code with Prettier
-```
-
-## Technology Stack
-
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **Styling**: Tailwind CSS, shadcn/ui
-- **Database**: Supabase (PostgreSQL)
-- **AI**: Google Gemini API
-- **Authentication**: Supabase Auth
-
-## Security & Compliance
-
-- All PII/PCI data encrypted at rest and in transit
-- Audit logs are immutable and time-sequenced
-- 5-7 year data retention for compliance
-- WCAG 2.1 AA accessibility standards
-- Role-based access control (RBAC)
-
-## Documentation
-
-See `autosar_ai_all_documentation.md` for comprehensive documentation including:
-- Product Requirements Document (PRD)
-- Technology Stack Details
-- Database Schema Design
-- User Flows & Wireframes
-- Styling Guidelines
-
-## Support
-
-For issues or questions, please refer to the comprehensive documentation in the project root.
-
-## License
-
-Proprietary - Internal Use Only
+- Create an individual case or upload the supplied customer JSON data.
+- The Express API evaluates the case with the rules/ML engine, persists it to MySQL, and generates a SAR draft.
+- Review, edit, download, and complete cases from the React UI. Draft and status changes are recorded in the MySQL audit trail.

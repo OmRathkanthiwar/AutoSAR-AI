@@ -1,0 +1,871 @@
+{
+  "feature": "format_ACH",
+  "threshold": 0.5,
+  "left": {
+    "feature": "is_cross_bank",
+    "threshold": 0.5,
+    "left": {
+      "feature": "amount",
+      "threshold": 0.0402,
+      "left": {
+        "feature": "amount",
+        "threshold": 0.0402,
+        "left": {
+          "probability": 0.0
+        },
+        "right": {
+          "probability": 1.0
+        }
+      },
+      "right": {
+        "probability": 0.0
+      }
+    },
+    "right": {
+      "feature": "amount",
+      "threshold": 1.0016,
+      "left": {
+        "feature": "amount",
+        "threshold": 0.1424,
+        "left": {
+          "feature": "amount",
+          "threshold": 0.0088,
+          "left": {
+            "feature": "hour",
+            "threshold": 12.5,
+            "left": {
+              "probability": 0.0
+            },
+            "right": {
+              "feature": "hour",
+              "threshold": 13.5,
+              "left": {
+                "feature": "amount",
+                "threshold": 0.0032,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.7259
+                }
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 0.0,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              }
+            }
+          },
+          "right": {
+            "feature": "amount",
+            "threshold": 0.0099,
+            "left": {
+              "feature": "hour",
+              "threshold": 14.5,
+              "left": {
+                "probability": 0.0
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 20.5,
+                "left": {
+                  "probability": 0.8794
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 0.0273,
+              "left": {
+                "feature": "hour",
+                "threshold": 15.5,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.1311
+                }
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 0.0273,
+                "left": {
+                  "probability": 0.999
+                },
+                "right": {
+                  "probability": 0.1968
+                }
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "amount",
+          "threshold": 0.4127,
+          "left": {
+            "feature": "hour",
+            "threshold": 1.5,
+            "left": {
+              "feature": "amount",
+              "threshold": 0.1535,
+              "left": {
+                "feature": "amount",
+                "threshold": 0.1534,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 1.0
+                }
+              },
+              "right": {
+                "probability": 0.0
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 0.2131,
+              "left": {
+                "feature": "hour",
+                "threshold": 18.5,
+                "left": {
+                  "probability": 0.2611
+                },
+                "right": {
+                  "probability": 0.7109
+                }
+              },
+              "right": {
+                "feature": "format_Wire",
+                "threshold": 0.5,
+                "left": {
+                  "probability": 0.698
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              }
+            }
+          },
+          "right": {
+            "feature": "amount",
+            "threshold": 0.9861,
+            "left": {
+              "feature": "hour",
+              "threshold": 22.5,
+              "left": {
+                "feature": "amount",
+                "threshold": 0.5664,
+                "left": {
+                  "probability": 0.1562
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 0.6779,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.8797
+                }
+              }
+            },
+            "right": {
+              "feature": "hour",
+              "threshold": 6.5,
+              "left": {
+                "probability": 0.0
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 17.5,
+                "left": {
+                  "probability": 0.9475
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "format_Wire",
+        "threshold": 0.5,
+        "left": {
+          "feature": "hour",
+          "threshold": 0.5,
+          "left": {
+            "feature": "amount",
+            "threshold": 3259.42,
+            "left": {
+              "feature": "amount",
+              "threshold": 1104.81,
+              "left": {
+                "feature": "amount",
+                "threshold": 1104.75,
+                "left": {
+                  "probability": 0.0632
+                },
+                "right": {
+                  "probability": 1.0
+                }
+              },
+              "right": {
+                "probability": 0.0
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 3289.9049,
+              "left": {
+                "feature": "amount",
+                "threshold": 3259.53,
+                "left": {
+                  "probability": 1.0
+                },
+                "right": {
+                  "probability": 0.7747
+                }
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 4943.79,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.201
+                }
+              }
+            }
+          },
+          "right": {
+            "feature": "amount",
+            "threshold": 59.265,
+            "left": {
+              "feature": "amount",
+              "threshold": 55.565,
+              "left": {
+                "feature": "amount",
+                "threshold": 52.4547,
+                "left": {
+                  "probability": 0.2022
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 5.5,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.4487
+                }
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 65.285,
+              "left": {
+                "probability": 0.0
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 65.295,
+                "left": {
+                  "probability": 0.9684
+                },
+                "right": {
+                  "probability": 0.1491
+                }
+              }
+            }
+          }
+        },
+        "right": {
+          "probability": 0.0
+        }
+      }
+    }
+  },
+  "right": {
+    "feature": "amount",
+    "threshold": 256.11,
+    "left": {
+      "feature": "amount",
+      "threshold": 94.96,
+      "left": {
+        "feature": "hour",
+        "threshold": 12.5,
+        "left": {
+          "feature": "hour",
+          "threshold": 8.5,
+          "left": {
+            "feature": "amount",
+            "threshold": 83.605,
+            "left": {
+              "probability": 0.0
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 83.615,
+              "left": {
+                "probability": 1.0
+              },
+              "right": {
+                "probability": 0.0
+              }
+            }
+          },
+          "right": {
+            "feature": "amount",
+            "threshold": 10.345,
+            "left": {
+              "probability": 0.0
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 10.36,
+              "left": {
+                "feature": "hour",
+                "threshold": 11.0,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 1.0
+                }
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 25.215,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.258
+                }
+              }
+            }
+          }
+        },
+        "right": {
+          "probability": 0.0
+        }
+      },
+      "right": {
+        "feature": "is_cross_bank",
+        "threshold": 0.5,
+        "left": {
+          "feature": "hour",
+          "threshold": 16.5,
+          "left": {
+            "feature": "hour",
+            "threshold": 0.5,
+            "left": {
+              "probability": 0.0
+            },
+            "right": {
+              "probability": 0.0
+            }
+          },
+          "right": {
+            "feature": "hour",
+            "threshold": 17.5,
+            "left": {
+              "feature": "amount",
+              "threshold": 188.495,
+              "left": {
+                "probability": 0.0
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 188.54,
+                "left": {
+                  "probability": 1.0
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 95.54,
+              "left": {
+                "probability": 0.0
+              },
+              "right": {
+                "probability": 0.0
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "hour",
+          "threshold": 5.5,
+          "left": {
+            "feature": "amount",
+            "threshold": 236.72,
+            "left": {
+              "feature": "amount",
+              "threshold": 98.065,
+              "left": {
+                "feature": "amount",
+                "threshold": 98.055,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.999
+                }
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 3.5,
+                "left": {
+                  "probability": 0.3284
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              }
+            },
+            "right": {
+              "feature": "hour",
+              "threshold": 2.5,
+              "left": {
+                "feature": "hour",
+                "threshold": 0.5,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.9007
+                }
+              },
+              "right": {
+                "probability": 0.0
+              }
+            }
+          },
+          "right": {
+            "feature": "hour",
+            "threshold": 16.5,
+            "left": {
+              "feature": "amount",
+              "threshold": 125.48,
+              "left": {
+                "feature": "amount",
+                "threshold": 105.31,
+                "left": {
+                  "probability": 0.6323
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 230.285,
+                "left": {
+                  "probability": 0.7007
+                },
+                "right": {
+                  "probability": 0.2752
+                }
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 96.67,
+              "left": {
+                "feature": "hour",
+                "threshold": 19.5,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.9432
+                }
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 17.5,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.4123
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "right": {
+      "feature": "is_cross_bank",
+      "threshold": 0.5,
+      "left": {
+        "feature": "amount",
+        "threshold": 1196.195,
+        "left": {
+          "feature": "amount",
+          "threshold": 569.9,
+          "left": {
+            "probability": 0.0
+          },
+          "right": {
+            "feature": "amount",
+            "threshold": 569.975,
+            "left": {
+              "feature": "hour",
+              "threshold": 11.5,
+              "left": {
+                "feature": "hour",
+                "threshold": 9.0,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.9969
+                }
+              },
+              "right": {
+                "probability": 0.0
+              }
+            },
+            "right": {
+              "feature": "hour",
+              "threshold": 0.5,
+              "left": {
+                "feature": "amount",
+                "threshold": 716.805,
+                "left": {
+                  "probability": 0.8696
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 832.815,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.3914
+                }
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "amount",
+          "threshold": 79399.4922,
+          "left": {
+            "feature": "amount",
+            "threshold": 4395.905,
+            "left": {
+              "feature": "amount",
+              "threshold": 2067.4701,
+              "left": {
+                "feature": "hour",
+                "threshold": 6.5,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.7948
+                }
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 8.5,
+                "left": {
+                  "probability": 0.5828
+                },
+                "right": {
+                  "probability": 0.1804
+                }
+              }
+            },
+            "right": {
+              "feature": "hour",
+              "threshold": 0.5,
+              "left": {
+                "probability": 0.0
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 19.5,
+                "left": {
+                  "probability": 0.8265
+                },
+                "right": {
+                  "probability": 0.6354
+                }
+              }
+            }
+          },
+          "right": {
+            "feature": "hour",
+            "threshold": 10.5,
+            "left": {
+              "feature": "amount",
+              "threshold": 225020.5859,
+              "left": {
+                "feature": "amount",
+                "threshold": 224666.9453,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 1.0
+                }
+              },
+              "right": {
+                "probability": 0.0
+              }
+            },
+            "right": {
+              "feature": "hour",
+              "threshold": 12.5,
+              "left": {
+                "feature": "amount",
+                "threshold": 686933.125,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.7882
+                }
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 20.5,
+                "left": {
+                  "probability": 0.153
+                },
+                "right": {
+                  "probability": 0.4883
+                }
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "feature": "amount",
+        "threshold": 1018.37,
+        "left": {
+          "feature": "amount",
+          "threshold": 589.655,
+          "left": {
+            "feature": "hour",
+            "threshold": 20.5,
+            "left": {
+              "feature": "amount",
+              "threshold": 581.37,
+              "left": {
+                "feature": "hour",
+                "threshold": 11.5,
+                "left": {
+                  "probability": 0.6837
+                },
+                "right": {
+                  "probability": 0.7689
+                }
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 0.5,
+                "left": {
+                  "probability": 0.0
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 302.44,
+              "left": {
+                "probability": 0.0
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 302.56,
+                "left": {
+                  "probability": 0.999
+                },
+                "right": {
+                  "probability": 0.504
+                }
+              }
+            }
+          },
+          "right": {
+            "feature": "amount",
+            "threshold": 1001.8,
+            "left": {
+              "feature": "amount",
+              "threshold": 999.17,
+              "left": {
+                "feature": "amount",
+                "threshold": 798.655,
+                "left": {
+                  "probability": 0.8238
+                },
+                "right": {
+                  "probability": 0.7548
+                }
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 19.5,
+                "left": {
+                  "probability": 0.9782
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 1001.85,
+              "left": {
+                "probability": 0.0
+              },
+              "right": {
+                "probability": 0.0
+              }
+            }
+          }
+        },
+        "right": {
+          "feature": "amount",
+          "threshold": 72011.3867,
+          "left": {
+            "feature": "amount",
+            "threshold": 4763.575,
+            "left": {
+              "feature": "amount",
+              "threshold": 2360.235,
+              "left": {
+                "feature": "hour",
+                "threshold": 0.5,
+                "left": {
+                  "probability": 0.7181
+                },
+                "right": {
+                  "probability": 0.8853
+                }
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 4747.0801,
+                "left": {
+                  "probability": 0.9165
+                },
+                "right": {
+                  "probability": 0.0
+                }
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 19985.21,
+              "left": {
+                "feature": "hour",
+                "threshold": 19.5,
+                "left": {
+                  "probability": 0.9717
+                },
+                "right": {
+                  "probability": 0.9352
+                }
+              },
+              "right": {
+                "feature": "hour",
+                "threshold": 4.5,
+                "left": {
+                  "probability": 0.8451
+                },
+                "right": {
+                  "probability": 0.9272
+                }
+              }
+            }
+          },
+          "right": {
+            "feature": "hour",
+            "threshold": 0.5,
+            "left": {
+              "feature": "amount",
+              "threshold": 124290.4258,
+              "left": {
+                "probability": 0.0
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 379035.7969,
+                "left": {
+                  "probability": 0.7772
+                },
+                "right": {
+                  "probability": 0.5127
+                }
+              }
+            },
+            "right": {
+              "feature": "amount",
+              "threshold": 628655.9062,
+              "left": {
+                "feature": "hour",
+                "threshold": 20.5,
+                "left": {
+                  "probability": 0.8748
+                },
+                "right": {
+                  "probability": 0.7366
+                }
+              },
+              "right": {
+                "feature": "amount",
+                "threshold": 1954348.0625,
+                "left": {
+                  "probability": 0.9445
+                },
+                "right": {
+                  "probability": 0.8705
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

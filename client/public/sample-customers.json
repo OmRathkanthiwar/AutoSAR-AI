@@ -1,0 +1,45 @@
+{
+  "customers": [
+    {
+      "customer_id": "CUST-DEMO-001",
+      "full_name": "Demo Trading Pvt Ltd",
+      "occupation": "Wholesale Trader",
+      "annual_income": 8000000,
+      "expected_monthly_volume": 2000000,
+      "pan": "ABCDE1234F",
+      "address": "123 Port Road, Mumbai, Maharashtra",
+      "transactions": [
+        {
+          "transaction_id": "TXN-DEMO-001",
+          "date": "2026-08-01T10:00:00Z",
+          "amount": 950000,
+          "currency": "INR",
+          "counterparty": "Overseas Partner",
+          "counterparty_country": "KY",
+          "type": "WIRE_OUT",
+          "description": "Consulting fees"
+        },
+        {
+          "transaction_id": "TXN-DEMO-002",
+          "date": "2026-08-02T14:30:00Z",
+          "amount": 920000,
+          "currency": "INR",
+          "counterparty": "Overseas Partner",
+          "counterparty_country": "KY",
+          "type": "WIRE_OUT",
+          "description": "Consulting fees - tranche 2"
+        },
+        {
+          "transaction_id": "TXN-DEMO-003",
+          "date": "2026-08-03T09:15:00Z",
+          "amount": 880000,
+          "currency": "INR",
+          "counterparty": "Overseas Partner",
+          "counterparty_country": "KY",
+          "type": "WIRE_OUT",
+          "description": "Consulting fees - tranche 3"
+        }
+      ]
+    }
+  ]
+}
