@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [dbStatus, setDbStatus] = useState(null);
   const [stats, setStats] = useState({ pending: 0, review: 0, completed: 0 });
+  const [listError, setListError] = useState(null);
 
   // Upload state
   const [file, setFile] = useState(null);
@@ -22,6 +23,7 @@ export default function DashboardPage() {
 
   const fetchCases = useCallback(async () => {
     setLoading(true);
+    setListError(null);
     try {
       const result = await api.listCases();
       if (result.success && Array.isArray(result.data)) {
@@ -35,6 +37,7 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error('Failed to fetch cases:', err);
+      setListError(err.message || 'Failed to fetch cases');
     } finally {
       setLoading(false);
     }
@@ -276,6 +279,12 @@ export default function DashboardPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Recent Cases</h2>
           </div>
+
+          {listError && (
+            <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-800">
+              {listError}
+            </div>
+          )}
 
           {loading ? (
             <div className="px-6 py-12 flex justify-center items-center">

@@ -94,17 +94,12 @@ export class CaseService {
    * Save a new SAR draft version.
    */
   static async saveSARDraft(caseId, narrative, versionNumber = 1.0, sourceEvent = 'AUTO_GENERATED') {
-    try {
-      const result = await execute(
-        `INSERT INTO sar_drafts (case_id, version_number, narrative_text, source_event, is_final_submission)
-         VALUES (?, ?, ?, ?, FALSE)`,
-        [caseId, versionNumber, narrative, sourceEvent]
-      );
-      return result.insertId;
-    } catch (err) {
-      console.error(`[CaseService] Failed to save SAR draft for ${caseId}:`, err.message);
-      return null;
-    }
+    const result = await execute(
+      `INSERT INTO sar_drafts (case_id, version_number, narrative_text, source_event, is_final_submission)
+       VALUES (?, ?, ?, ?, FALSE)`,
+      [caseId, versionNumber, narrative, sourceEvent]
+    );
+    return result.insertId;
   }
 
   /**

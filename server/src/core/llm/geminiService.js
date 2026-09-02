@@ -1,11 +1,5 @@
+import '../../config/loadEnv.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
 const SAR_PROMPT_TEMPLATE_INR = `You are an expert AML compliance analyst for an Indian bank, tasked with generating a Suspicious Activity Report (SAR) for submission to FIU-IND under the Prevention of Money Laundering Act (PMLA) 2002.
 
@@ -52,12 +46,12 @@ export async function generateSARNarrative(customerData, transactions, ruleEngin
 
   if (!apiKey) {
     console.warn('[Gemini] GEMINI_API_KEY not set. Using template-based generation.');
-    return { narrative: generateFallbackSAR(customerData, transactions, ruleEngineOutput) };
+    return { narrative: generateFallbackSAR(customerData, transactions, ruleEngineOutput), source: 'fallback' };
   }
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash-exp';
+    const modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
     const model = genAI.getGenerativeModel({ model: modelName });
 
     const customerInfo = buildCustomerInfo(customerData);
@@ -83,10 +77,10 @@ export async function generateSARNarrative(customerData, transactions, ruleEngin
       raw_response: { text: narrative },
     };
 
-    return { narrative, llm_log: llmLog };
+    return { narrative, llm_log: llmLog, source: 'gemini' };
   } catch (error) {
     console.error('[Gemini] API error:', error.message);
-    return { narrative: generateFallbackSAR(customerData, transactions, ruleEngineOutput) };
+    return { narrative: generateFallbackSAR(customerData, transactions, ruleEngineOutput), source: 'fallback' };
   }
 }
 
@@ -157,10 +151,10 @@ WHAT: ${transactions.length} transaction(s) totaling ₹${totalLakhs} Lakhs (₹
 
 WHEN: Transactions occurred during the monitoring period
 
-WHERE: ${ruleOutput.typology_tags.join(', ')}
+WHERE: ${(ruleOutput.typology_tags || []).join(', ')}
 
 WHY: The following suspicious indicators were identified:
-${ruleOutput.triggered_rules.map((rule, idx) => `${idx + 1}. ${rule}`).join('\n')}
+${(ruleOutput.triggered_rules || []).map((rule, idx) => `${idx + 1}. ${rule}`).join('\n')}
 
 HOW: Transaction analysis reveals the following pattern:
 
@@ -175,7 +169,7 @@ ${transactions
   .join('\n')}
 
 RISK ANALYSIS:
-Typologies: ${ruleOutput.typology_tags.join(', ')}
+Typologies: ${(ruleOutput.typology_tags || []).join(', ')}
 Annual Income: ₹${((parseFloat(customer.annual_income) || 1200000) / 100000).toFixed(2)} Lakhs
 Transaction Volume: ₹${totalLakhs} Lakhs
 
