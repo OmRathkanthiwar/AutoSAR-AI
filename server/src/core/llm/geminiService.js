@@ -51,7 +51,7 @@ export async function generateSARNarrative(customerData, transactions, ruleEngin
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
     const model = genAI.getGenerativeModel({ model: modelName });
 
     const customerInfo = buildCustomerInfo(customerData);
@@ -63,7 +63,7 @@ export async function generateSARNarrative(customerData, transactions, ruleEngin
       .replace('{transaction_summary}', transactionSummary)
       .replace('{risk_analysis}', riskAnalysis);
 
-    const result = await model.generateContent(prompt);
+    const result = await generateWithRetry(model, prompt);
     const narrative = result.response.text();
 
     const llmLog = {
@@ -81,6 +81,20 @@ export async function generateSARNarrative(customerData, transactions, ruleEngin
   } catch (error) {
     console.error('[Gemini] API error:', error.message);
     return { narrative: generateFallbackSAR(customerData, transactions, ruleEngineOutput), source: 'fallback' };
+  }
+}
+
+async function generateWithRetry(model, prompt) {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await model.generateContent(prompt);
+    } catch (error) {
+      const message = error.message || '';
+      const isTransient = /\b(429|500|502|503|504)\b/.test(message);
+      if (!isTransient || attempt === maxAttempts) throw error;
+      await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+    }
   }
 }
 
@@ -104,13 +118,12 @@ Classification: ${ruleOutput.final_classification}
 
 Transactions:
 ${transactions
-  .map(
-    (txn, idx) =>
-      `${idx + 1}. ${txn.date} - ₹${parseFloat(txn.amount).toLocaleString()} to ${txn.counterparty} (${
-        txn.counterparty_country || txn.country || 'Unknown'
-      }) via ${txn.type}`
-  )
-  .join('\n')}`;
+      .map(
+        (txn, idx) =>
+          `${idx + 1}. ${txn.date} - ₹${parseFloat(txn.amount).toLocaleString()} to ${txn.counterparty} (${txn.counterparty_country || txn.country || 'Unknown'
+          }) via ${txn.type}`
+      )
+      .join('\n')}`;
 }
 
 function buildRiskAnalysis(ruleOutput) {
@@ -122,8 +135,8 @@ ${ruleOutput.typology_tags.join(', ')}
 
 Key Metrics:
 ${Object.entries(ruleOutput.calculated_metrics)
-  .map(([key, value]) => `- ${key}: ${value}`)
-  .join('\n')}`;
+      .map(([key, value]) => `- ${key}: ${value}`)
+      .join('\n')}`;
 }
 
 export function generateFallbackSAR(customer, transactions, ruleOutput) {
@@ -160,13 +173,12 @@ HOW: Transaction analysis reveals the following pattern:
 
 TRANSACTION DETAILS:
 ${transactions
-  .map(
-    (txn, idx) =>
-      `${idx + 1}. ${txn.date} - ₹${parseFloat(txn.amount).toLocaleString()} to ${txn.counterparty} (${
-        txn.counterparty_country || txn.country || 'Unknown'
-      }) via ${txn.type}`
-  )
-  .join('\n')}
+      .map(
+        (txn, idx) =>
+          `${idx + 1}. ${txn.date} - ₹${parseFloat(txn.amount).toLocaleString()} to ${txn.counterparty} (${txn.counterparty_country || txn.country || 'Unknown'
+          }) via ${txn.type}`
+      )
+      .join('\n')}
 
 RISK ANALYSIS:
 Typologies: ${(ruleOutput.typology_tags || []).join(', ')}

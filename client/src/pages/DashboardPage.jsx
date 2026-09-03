@@ -11,7 +11,6 @@ export default function DashboardPage() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
-  const [dbStatus, setDbStatus] = useState(null);
   const [stats, setStats] = useState({ pending: 0, review: 0, completed: 0 });
   const [listError, setListError] = useState(null);
 
@@ -43,18 +42,8 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const checkDbStatus = async () => {
-    try {
-      const result = await api.health();
-      setDbStatus(result.database === 'connected' ? 'connected' : 'error');
-    } catch {
-      setDbStatus('error');
-    }
-  };
-
   useEffect(() => {
     fetchCases();
-    checkDbStatus();
   }, [fetchCases]);
 
   const getStatusColor = (status) => {
@@ -123,7 +112,7 @@ export default function DashboardPage() {
       }
       const result = await api.uploadCustomers(jsonData);
       if (result.success) {
-        alert(`✅ Processed ${result.data.processed} customers\n${result.data.sars_generated} SARs generated`);
+        alert(`Processed ${result.data.processed} customers\n${result.data.sars_generated} SARs generated`);
         setFile(null);
         setShowUpload(false);
         if (result.data.first_case_id) {
@@ -151,12 +140,6 @@ export default function DashboardPage() {
                 <h1 className="text-2xl font-semibold text-gray-900">AutoSAR AI</h1>
                 <p className="text-sm text-gray-500">AML Compliance Dashboard</p>
               </div>
-              {dbStatus && (
-                <span className={`ml-4 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${dbStatus === 'connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${dbStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} style={{ display: 'inline-block' }}></span>
-                  MySQL {dbStatus === 'connected' ? 'Connected' : 'Disconnected'}
-                </span>
-              )}
             </div>
             <div className="flex items-center space-x-3">
               <button onClick={downloadSample} className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">

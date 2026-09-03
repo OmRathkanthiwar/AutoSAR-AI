@@ -54,13 +54,11 @@ export class CaseService {
           riskIndicators.length > 0
             ? riskIndicators
             : ruleOutput.triggered_rules.map(rule => ({
-                indicator_type: rule.includes('ML Model') ? 'AI Predictive Anomaly' : 'Rule Violation',
-                severity: rule.includes('Critical') || rule.includes('ML Model')
-                  ? 'CRITICAL'
-                  : rule.includes('High') ? 'HIGH' : 'MEDIUM',
-                description: rule,
-                rule_triggered: rule,
-              }))
+              indicator_type: 'Model assessment',
+              severity: 'LOW',
+              description: rule,
+              rule_triggered: rule,
+            }))
         ),
         timestamp,
       ]

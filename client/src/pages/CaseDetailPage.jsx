@@ -7,20 +7,20 @@ import {
   AlertTriangle, Clock, ChevronDown, ChevronRight, Code
 } from 'lucide-react';
 
-const HIGH_RISK_COUNTRIES = new Set(['KP','IR','MM','SY','CU','KY','PA','VG']);
-const MEDIUM_RISK_COUNTRIES = new Set(['AE','HK','SG','TR','RU']);
+const COUNTRY_COLORS = 'bg-gray-100 text-gray-700 border-gray-200';
 
-function getCountryRisk(code) {
-  if (HIGH_RISK_COUNTRIES.has(code)) return 'high';
-  if (MEDIUM_RISK_COUNTRIES.has(code)) return 'medium';
-  return 'low';
+function getIndicatorDescription(description) {
+  if (description?.startsWith('ML model probability: 0/100')) {
+    return 'The model found no strong suspicious pattern in these transactions.';
+  }
+  if (description?.startsWith('Model classification:')) {
+    return description.replace('Model classification:', 'The model assessment is:');
+  }
+  if (description?.startsWith('Top model features:')) {
+    return `The model mainly considered ${description.replace('Top model features:', '').trim().replaceAll('_', ' ')}.`;
+  }
+  return description;
 }
-
-const RISK_COUNTRY_COLORS = {
-  high: 'bg-red-100 text-red-800 border-red-200',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  low: 'bg-green-100 text-green-800 border-green-200',
-};
 
 export default function CaseDetailPage() {
   const { caseId } = useParams();
@@ -250,7 +250,6 @@ export default function CaseDetailPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {(data?.transaction_list || []).map((txn, i) => {
-                      const risk = getCountryRisk(txn.counterparty_country);
                       return (
                         <tr key={txn.transaction_id || i} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{txn.transaction_id}</td>
@@ -262,9 +261,8 @@ export default function CaseDetailPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <Globe className="h-4 w-4 mr-2 text-gray-400" />
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${RISK_COUNTRY_COLORS[risk]}`}>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${COUNTRY_COLORS}`}>
                                 {txn.counterparty_country}
-                                {risk === 'high' && <AlertTriangle className="ml-1 h-3 w-3" />}
                               </span>
                             </div>
                           </td>
@@ -288,13 +286,14 @@ export default function CaseDetailPage() {
                 <div className="px-6 py-4">
                   <ul className="space-y-3">
                     {data.risk_indicators.map((ind, i) => {
-                      const sevColor = ind.severity === 'CRITICAL' ? 'bg-red-100 text-red-800 border-red-300' : ind.severity === 'HIGH' ? 'bg-orange-100 text-orange-800 border-orange-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300';
+                      const severity = riskScore >= 75 ? 'CRITICAL' : riskScore >= 50 ? 'HIGH' : riskScore >= 25 ? 'MEDIUM' : 'LOW';
+                      const sevColor = severity === 'CRITICAL' ? 'bg-red-100 text-red-800 border-red-300' : severity === 'HIGH' ? 'bg-orange-100 text-orange-800 border-orange-300' : severity === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 'bg-gray-100 text-gray-700 border-gray-300';
                       return (
                         <li key={i} className="flex items-start">
-                          <span className={`flex-shrink-0 mt-0.5 mr-3 px-2 py-0.5 rounded text-xs font-medium border ${sevColor}`}>{ind.severity}</span>
+                          <span className={`flex-shrink-0 mt-0.5 mr-3 px-2 py-0.5 rounded text-xs font-medium border ${sevColor}`}>{severity}</span>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{ind.indicator_type}</p>
-                            <p className="text-sm text-gray-600 mt-0.5">{ind.description}</p>
+                            <p className="text-sm font-medium text-gray-900">{ind.indicator_type === 'Rule Violation' ? 'Model assessment' : ind.indicator_type}</p>
+                            <p className="text-sm text-gray-600 mt-0.5">{getIndicatorDescription(ind.description)}</p>
                           </div>
                         </li>
                       );
